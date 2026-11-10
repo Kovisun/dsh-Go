@@ -5,8 +5,6 @@ import 'dart:typed_data';
 import 'package:dsh_remote/dsh_remote.dart' as remote;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-import 'media_audio_route.dart';
-
 /// [remote.RemotePeerConnector] over flutter_webrtc (libwebrtc): the
 /// DataChannel that carries DSH Remote's direct path (LAN / P2P / TURN).
 /// Data only — no microphone, camera or audio session is touched.
@@ -19,9 +17,6 @@ Future<remote.RemotePeerConnection> flutterPeerConnector(
     'sdpSemantics': 'unified-plan',
     'iceTransportPolicy': handlers.iceTransportPolicy.name,
   });
-  // libwebrtc puts Android into the communication route for this (data-only) link; media the
-  // app plays must stay on the loudspeaker, so restore the route as soon as it exists.
-  unawaited(restoreMediaAudioRoute());
   return _FlutterPeer(pc, handlers);
 }
 
@@ -37,13 +32,6 @@ class _FlutterPeer implements remote.RemotePeerConnection {
         if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
             state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
           _end('connection ${state.name}');
-        } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
-          // The audio device module arms after creation and re-asserts its communication route
-          // whenever playback starts, so hold the media route for the link's lifetime.
-          if (!_holdingAudioRoute) {
-            _holdingAudioRoute = true;
-            unawaited(startMediaAudioWatch());
-          }
         }
       }
       ..onIceConnectionState = (state) {
@@ -58,8 +46,6 @@ class _FlutterPeer implements remote.RemotePeerConnection {
   final remote.RemotePeerHandlers _handlers;
   RTCDataChannel? _channel;
   bool _closed = false;
-  /// This link holds the native media-route watchdog (released exactly once).
-  bool _holdingAudioRoute = false;
   Future<void>? _releasing;
 
   void _end(String reason) {
@@ -134,10 +120,6 @@ class _FlutterPeer implements remote.RemotePeerConnection {
 
   Future<void> _disposePeer() async {
     _channel = null;
-    if (_holdingAudioRoute) {
-      _holdingAudioRoute = false;
-      unawaited(stopMediaAudioWatch());
-    }
     try {
       await _pc.close();
     } catch (_) {

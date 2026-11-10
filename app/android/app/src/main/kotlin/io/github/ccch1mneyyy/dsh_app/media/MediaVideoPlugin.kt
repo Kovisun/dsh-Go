@@ -15,7 +15,6 @@ import android.os.Looper
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import io.github.ccch1mneyyy.dsh_app.nativemedia.MediaAudioRoute
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.TextureRegistry
@@ -151,9 +150,6 @@ class MediaVideoPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallH
     }
     private fun requestFocus(): Boolean {
         if (focusListener != null) return true
-        // A DSH Remote peer link leaves Android in the communication route; local video
-        // audio belongs on the loudspeaker, so restore the media route before playing.
-        MediaAudioRoute.restore(app)
         val listener = object : AudioManager.OnAudioFocusChangeListener {
             override fun onAudioFocusChange(change: Int) {
                 if (change <= 0) main.post {
