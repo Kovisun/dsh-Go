@@ -88,13 +88,6 @@ dependencies:
   image: 4.12.0
   mobile_scanner: ^7.5.0
 
-# dsh-go: the vendored flutter_webrtc removes libwebrtc's platform audio device module, which
-# otherwise puts Android into the communication route (earpiece) for a DataChannel-only link.
-# See third_party/flutter_webrtc and the AUDIO_DEVICE_MODULE_ENABLED switch there.
-dependency_overrides:
-  flutter_webrtc:
-    path: ../third_party/flutter_webrtc
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
