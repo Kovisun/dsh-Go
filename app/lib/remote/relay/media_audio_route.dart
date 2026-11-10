@@ -24,3 +24,32 @@ Future<bool> restoreMediaAudioRoute() async {
     return false;
   }
 }
+
+/// Hold the media route for one peer link.
+///
+/// libwebrtc re-asserts its communication route when audio focus or the device list changes,
+/// which is what happens the moment local playback starts, so a single restore at connect time
+/// loses the loudspeaker again. The native watchdog re-checks once a second while a link is up
+/// and only touches the audio system when the route actually drifted.
+Future<void> startMediaAudioWatch() async {
+  if (!Platform.isAndroid) return;
+  try {
+    await _channel.invokeMethod<Object?>('startMediaAudioWatch');
+  } on MissingPluginException {
+    // Nothing to hold on a host without the native channel.
+  } on PlatformException {
+    // A refused hold must not fail the link.
+  }
+}
+
+/// Release one peer link's hold on the media route.
+Future<void> stopMediaAudioWatch() async {
+  if (!Platform.isAndroid) return;
+  try {
+    await _channel.invokeMethod<Object?>('stopMediaAudioWatch');
+  } on MissingPluginException {
+    // See [startMediaAudioWatch].
+  } on PlatformException {
+    // Releasing twice, or after a native teardown, is harmless.
+  }
+}

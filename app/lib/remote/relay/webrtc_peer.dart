@@ -38,8 +38,12 @@ class _FlutterPeer implements remote.RemotePeerConnection {
             state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
           _end('connection ${state.name}');
         } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
-          // The audio device module finishes arming after creation; re-assert the media route.
-          unawaited(restoreMediaAudioRoute());
+          // The audio device module arms after creation and re-asserts its communication route
+          // whenever playback starts, so hold the media route for the link's lifetime.
+          if (!_holdingAudioRoute) {
+            _holdingAudioRoute = true;
+            unawaited(startMediaAudioWatch());
+          }
         }
       }
       ..onIceConnectionState = (state) {
@@ -54,6 +58,8 @@ class _FlutterPeer implements remote.RemotePeerConnection {
   final remote.RemotePeerHandlers _handlers;
   RTCDataChannel? _channel;
   bool _closed = false;
+  /// This link holds the native media-route watchdog (released exactly once).
+  bool _holdingAudioRoute = false;
   Future<void>? _releasing;
 
   void _end(String reason) {
@@ -128,6 +134,10 @@ class _FlutterPeer implements remote.RemotePeerConnection {
 
   Future<void> _disposePeer() async {
     _channel = null;
+    if (_holdingAudioRoute) {
+      _holdingAudioRoute = false;
+      unawaited(stopMediaAudioWatch());
+    }
     try {
       await _pc.close();
     } catch (_) {

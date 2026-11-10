@@ -67,6 +67,7 @@ class NativeMediaPlugin :
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         appContext = binding.applicationContext
+        MediaAudioRoute.attach(appContext)
         methods = MethodChannel(binding.binaryMessenger, "dsh/native-media").also { it.setMethodCallHandler(this) }
         events = EventChannel(binding.binaryMessenger, "dsh/native-media/events").also { it.setStreamHandler(this) }
         if (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
@@ -145,6 +146,18 @@ class NativeMediaPlugin :
         // (the DSH Remote peer link asks right after it opens, media playback before it starts).
         if (call.method == "restoreMediaAudioRoute") {
             result.success(MediaAudioRoute.restore(appContext))
+            return
+        }
+        // A peer link holds the media route for its whole lifetime: libwebrtc re-asserts its
+        // communication route when playback starts, so one restore is not enough.
+        if (call.method == "startMediaAudioWatch") {
+            MediaAudioRoute.startWatch()
+            result.success(true)
+            return
+        }
+        if (call.method == "stopMediaAudioWatch") {
+            MediaAudioRoute.stopWatch()
+            result.success(true)
             return
         }
         val o = owner
