@@ -2,6 +2,8 @@ package io.github.ccch1mneyyy.dsh_app.nativemedia
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioDeviceCallback
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.AudioPlaybackConfiguration
 import android.os.Build
@@ -59,9 +61,9 @@ object MediaAudioRoute {
     }
 
     /** A device appearing or disappearing is the other moment libwebrtc re-routes. */
-    private val deviceCallback = object : AudioManager.AudioDeviceCallback() {
-        override fun onAudioDevicesAdded(addedDevices: Array<out android.media.AudioDeviceInfo>) = correct()
-        override fun onAudioDevicesRemoved(removedDevices: Array<out android.media.AudioDeviceInfo>) = correct()
+    private val deviceCallback = object : AudioDeviceCallback() {
+        override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) = correct()
+        override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) = correct()
     }
 
     /** Remember the application context the watchdog restores through. */
