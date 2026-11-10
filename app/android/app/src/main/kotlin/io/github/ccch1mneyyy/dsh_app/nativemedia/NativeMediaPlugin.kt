@@ -141,6 +141,12 @@ class NativeMediaPlugin :
             return
         }
         if (call.method == "activate") return activate(call, result)
+        // Not owner-scoped: any caller may ask the app to leave the communication route
+        // (the DSH Remote peer link asks right after it opens, media playback before it starts).
+        if (call.method == "restoreMediaAudioRoute") {
+            result.success(MediaAudioRoute.restore(app))
+            return
+        }
         val o = owner
         if (o == null || call.argument<String>("owner") != o.token || call.argument<Int>("generation") != o.generation ||
             call.argument<String>("lease") != o.lease
