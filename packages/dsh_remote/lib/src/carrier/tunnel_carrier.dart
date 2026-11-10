@@ -62,6 +62,8 @@ const Set<String> harnessRemoteAllowlist = {
   'session/canOpenWorkspacePath',
   'session/control',
   'session/create',
+  'session/delete',
+  'session/deletion',
   'session/follow',
   'session/fork',
   'session/list',
@@ -193,7 +195,7 @@ typedef RemoteSessionOpener = Future<RemoteHostSession> Function(RemoteFailure? 
 ///   `harness.remote.transfer.v1`), single messages are capped at 4 MiB;
 /// * Host / tunnel refusals (`METHOD_NOT_ALLOWED`, `RPC_TIMEOUT`,
 ///   `RATE_LIMITED`, ...) surface as `{ok: false}` [DshRemoteException]s.
-class RemoteTunnelCarrier extends DshCarrier implements WorkspaceUploadCarrier {
+class RemoteTunnelCarrier extends DshCarrier implements WorkspaceUploadCarrier, SessionDeletionCarrier {
   RemoteTunnelCarrier({
     required this.hostId,
     required RemoteSessionOpener open,
@@ -243,6 +245,30 @@ class RemoteTunnelCarrier extends DshCarrier implements WorkspaceUploadCarrier {
 
   @override
   bool allowsEndpoint(String endpoint) => harnessRemoteAllowlist.contains(endpoint);
+
+  /// A Host that does not serve the endpoint keeps answering `false`, so an older
+  /// remote Host degrades to "unsupported" instead of surfacing an RPC error.
+  @override
+  Future<bool> sessionDeletionSupported({Duration? timeout}) async {
+    final result = await call('session/deletion', const {}, timeout: timeout ?? const Duration(seconds: 8));
+    if (result is! RpcOk) return false;
+    final value = result.value;
+    return value is Map && value['version'] == 1 && value['supported'] == true;
+  }
+
+  /// Deletes one confirmed session through the Host's own deletion path.
+  ///
+  /// The reply must name the session it deleted: a lost or mismatched answer is an unknown
+  /// outcome, never a silent success.
+  @override
+  Future<void> deleteSessionPermanently(String sessionId, {Duration? timeout}) async {
+    final result = await call('session/delete', <String, Object?>{'sessionId': sessionId}, timeout: timeout);
+    if (result is RpcError) throw result.error;
+    final value = result is RpcOk ? result.value : null;
+    if (value is! Map || value['deleted'] != true || value['sessionId'] != sessionId) {
+      throw const DshProtocolException('session deletion reply did not confirm the requested session');
+    }
+  }
 
   @override
   bool get supportsWorkspaceUpload =>

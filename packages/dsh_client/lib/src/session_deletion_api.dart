@@ -8,6 +8,7 @@ import 'carrier.dart';
 import 'errors.dart';
 import 'json.dart';
 import 'session_api.dart';
+import 'session_deletion_carrier.dart';
 
 const sessionDeletionCapabilityPath = '/dsh-go/v1/sessions/deletion';
 const sessionDeletionPath = '/dsh-go/v1/sessions/delete';
@@ -21,6 +22,10 @@ extension SessionDeletionApi on DshClient {
   /// plugin's JSON is *not* proof of support.
   Future<bool> supportsSessionDeletion({Duration timeout = const Duration(seconds: 8)}) async {
     final transport = carrier;
+    // A carrier that tunnels its calls answers the same contract as RPC endpoints; asking it
+    // is the only way to learn whether the Host behind it serves deletion.
+    final tunnelled = transport is SessionDeletionCarrier ? transport as SessionDeletionCarrier : null;
+    if (tunnelled != null) return tunnelled.sessionDeletionSupported(timeout: timeout);
     if (transport is! DshHttpCarrier) return false;
     final response = await transport.connection.get(sessionDeletionCapabilityPath, timeout: timeout);
     if (response.statusCode == 404 || response.statusCode == 405 || response.statusCode == 501) return false;
@@ -39,6 +44,8 @@ extension SessionDeletionApi on DshClient {
       throw ArgumentError.value(sessionId, 'sessionId');
     }
     final transport = carrier;
+    final tunnelled = transport is SessionDeletionCarrier ? transport as SessionDeletionCarrier : null;
+    if (tunnelled != null) return tunnelled.deleteSessionPermanently(sessionId, timeout: timeout);
     if (transport is! DshHttpCarrier) {
       throw const DshRemoteException('unavailable', 'this carrier cannot delete sessions');
     }
