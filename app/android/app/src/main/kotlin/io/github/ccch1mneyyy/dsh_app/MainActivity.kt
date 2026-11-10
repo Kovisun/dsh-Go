@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import com.cloudwebrtc.webrtc.audio.AudioSwitchManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
@@ -37,6 +38,12 @@ class MainActivity : FlutterActivity() {
      * notifications. Plugins are registered once, with the engine.
      */
     override fun provideFlutterEngine(context: Context): FlutterEngine {
+        // DSH Remote's peer link is a data-only DataChannel: flutter_webrtc has no business putting
+        // Android into the communication route, which otherwise sends every other sound the app
+        // plays (a chat video, a Douyin clip) to the earpiece. The switch is process-global and
+        // must be set before the first audio operation, so it goes in before the engine — and with
+        // it the WebRTC plugin — exists.
+        AudioSwitchManager.setAudioSessionManagementEnabled(false)
         val cache = FlutterEngineCache.getInstance()
         cache.get(ENGINE_ID)?.let { return it }
         return FlutterEngine(applicationContext).also { engine ->
