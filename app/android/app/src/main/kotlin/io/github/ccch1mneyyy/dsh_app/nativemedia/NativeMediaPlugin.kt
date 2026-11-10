@@ -144,7 +144,7 @@ class NativeMediaPlugin :
         // Not owner-scoped: any caller may ask the app to leave the communication route
         // (the DSH Remote peer link asks right after it opens, media playback before it starts).
         if (call.method == "restoreMediaAudioRoute") {
-            result.success(MediaAudioRoute.restore(app))
+            result.success(MediaAudioRoute.restore(appContext))
             return
         }
         val o = owner
