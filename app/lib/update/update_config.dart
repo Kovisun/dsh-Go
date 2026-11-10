@@ -21,7 +21,12 @@
 library;
 
 /// GitHub repository the releases live in.
-const updateRepo = 'ccch1mneyyy/dsh-go';
+///
+/// Defaults to this fork: an update may only ever install a release this fork
+/// publishes, never an upstream release that lacks its patches. A build that
+/// should follow another repository overrides it with
+/// `--dart-define=DSH_UPDATE_REPO=owner/repo`.
+const updateRepo = String.fromEnvironment('DSH_UPDATE_REPO', defaultValue: 'Kovisun/dsh-Go');
 
 /// `releases/latest` of the REST API: tag, notes, assets with sizes and
 /// SHA-256 digests. Unauthenticated: 60 requests per hour per IP.
