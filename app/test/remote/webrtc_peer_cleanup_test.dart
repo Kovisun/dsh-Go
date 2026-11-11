@@ -18,6 +18,18 @@ void main() {
     handlers = RemotePeerHandlers(onIceCandidate: (_) {}, onOpen: () {}, onMessage: (_) {}, onClosed: closed.add);
   });
 
+  test('the data-only offer does not request audio or video', () async {
+    final peer = await flutterPeerConnector([], handlers);
+    addTearDown(peer.close);
+    await peer.createOffer('dsh');
+
+    final offer = native.calls.singleWhere((call) => call.method == 'createOffer');
+    expect((offer.arguments as Map)['constraints'], {
+      'mandatory': {'OfferToReceiveAudio': false, 'OfferToReceiveVideo': false},
+      'optional': <Object>[],
+    });
+    expect(native.calls.map((call) => call.method), isNot(contains('getUserMedia')));
+  });
   tearDown(() => native.uninstall());
 
   test('close failure still disposes the peer and its event subscription', () async {

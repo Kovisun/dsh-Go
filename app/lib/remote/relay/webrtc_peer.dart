@@ -84,7 +84,14 @@ class _FlutterPeer implements remote.RemotePeerConnection {
       ..onMessage = (message) {
         if (!_closed) _handlers.onMessage(message.isBinary ? message.binary : utf8.encode(message.text));
       };
-    final offer = await _pc.createOffer();
+    // flutter_webrtc otherwise offers to receive audio and video, and the answerer's silent audio
+    // stream keeps the device module's playback track running: ten seconds of silence every ten,
+    // a background playback the audio hardening service partially mutes. This path carries a
+    // DataChannel only, so the offer must not ask for either medium.
+    final offer = await _pc.createOffer({
+      'mandatory': {'OfferToReceiveAudio': false, 'OfferToReceiveVideo': false},
+      'optional': <String>[],
+    });
     _checkOpen();
     await _pc.setLocalDescription(offer);
     _checkOpen();
