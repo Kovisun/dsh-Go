@@ -40,7 +40,9 @@ from build_number import MAX_VERSION_CODE, decode
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FLAVORS = ("arm64", "x64")
 FLAVOR_ABI = {"arm64": "arm64-v8a", "x64": "x86_64"}
-REPO = "ccch1mneyyy/dsh-go"
+# Where this build's release lives. Defaults to the fork: release files and the
+# update manifest must only ever point at releases this fork publishes.
+REPO = os.environ.get("DSH_RELEASE_REPO", "Kovisun/dsh-go")
 VERSION_RE = re.compile(r"^(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+(\d+))?$")
 BADGING_RE = re.compile(r"^package: .*?\bversionCode='(\d*)' versionName='([^']*)'", re.MULTILINE)
 CACHE = pathlib.Path.home() / ".cache" / "dshgo-release" / "apk"
