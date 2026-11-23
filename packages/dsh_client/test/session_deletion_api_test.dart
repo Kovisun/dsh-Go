@@ -169,4 +169,34 @@ void main() {
     }
     expect(requests, isEmpty);
   });
+  test('a tunnelled carrier answers the same contract instead of being refused', () async {
+    final carrier = _Tunnelled(supported: true);
+    final relay = DshClient.withCarrier(carrier);
+    addTearDown(relay.close);
+    expect(await relay.supportsSessionDeletion(), isTrue);
+    await relay.deleteSessionPermanently('s1');
+    expect(carrier.deleted, ['s1']);
+    expect(requests, isEmpty, reason: 'a tunnelled carrier never reaches an HTTP route');
+  });
+
+  test('a tunnelled carrier that refuses keeps the archive fallback', () async {
+    final carrier = _Tunnelled(supported: false);
+    final relay = DshClient.withCarrier(carrier);
+    addTearDown(relay.close);
+    expect(await relay.supportsSessionDeletion(), isFalse);
+    expect(carrier.deleted, isEmpty);
+  });
+}
+
+class _Tunnelled extends _RelayOnly implements SessionDeletionCarrier {
+  _Tunnelled({required this.supported});
+
+  final bool supported;
+  final deleted = <String>[];
+
+  @override
+  Future<bool> sessionDeletionSupported({Duration? timeout}) async => supported;
+
+  @override
+  Future<void> deleteSessionPermanently(String sessionId, {Duration? timeout}) async => deleted.add(sessionId);
 }

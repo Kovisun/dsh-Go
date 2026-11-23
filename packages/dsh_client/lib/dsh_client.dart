@@ -47,6 +47,7 @@ export 'src/runtime_capabilities.dart';
 export 'src/schedule_list_api.dart';
 export 'src/session_api.dart';
 export 'src/session_deletion_api.dart';
+export 'src/session_deletion_carrier.dart';
 export 'src/session_activation.dart';
 export 'src/session_export.dart';
 export 'src/speech_api.dart';
